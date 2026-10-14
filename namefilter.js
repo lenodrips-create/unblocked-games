@@ -1,108 +1,58 @@
 /* EduDeck name filter, shared by the landing page and the online list.
-   Exposes window.EduNameFilter = { isBanned, normName }.
+   Exposes window.EduNameFilter = { isBanned, isReserved, normName, checkCode }.
    A name is folded several ways (look-alike letters, leet, stretched letters,
    sound-alikes, reversed) and blocked if any version contains a banned word. */
 (function () {
-  var BANNED = [
-    // anti-Black
-    "nigger", "nigga", "niger", "coon", "jigaboo", "spook", "darkie", "darky",
-    "sambo", "negro", "groid", "porchmonkey", "junglebunny", "tarbaby",
-    "pickaninny", "golliwog", "moolie", "moulie", "buckwheat", "spearchucker",
-    // anti-white
-    "honky", "honkey", "cracker", "whitey", "gringo", "peckerwood", "wonderbread",
-    // anti-Latino
-    "spic", "spik", "beaner", "wetback", "greaser", "cholo",
-    // anti-Asian
-    "chink", "gook", "jap", "slant", "slanteye", "zipperhead",
-    "chingchong", "dink", "coolie", "chinaman",
-    // anti-Arab / Muslim
-    "raghead", "towelhead", "sandnigger", "cameljockey", "muzzie", "paki",
-    // anti-Native
-    "redskin", "injun", "squaw", "savage",
-    // anti-Jewish
-    "kike", "kyke", "heeb", "yid", "shylock", "hymie", "goy", "goyim",
-    "jew", "jews", "nazi", "hitler", "shekel",
-    // anti-LGBTQ
-    "faggot", "faggit", "fag", "dyke", "tranny", "homo", "poofter", "poof",
-    "shemale", "ladyboy", "queer", "gay",
-    // disability
-    "retard", "tard", "spastic", "spaz", "cripple", "mongoloid",
-    // Roma
-    "gyp", "gypsy",
-    // other requested words
-    "dress", "dresses",
-    // general profanity
-    "fuck", "shit", "bitch", "cunt", "pussy", "dick", "cock", "penis",
-    "vagina", "porn", "sex", "rape", "wop", "dago", "kraut", "kkk",
-    // common evasion spellings the folder won't catch on its own
-    "niqqa", "niqqer", "niqa", "knigger", "fgt", "phag", "biatch", "beetch",
-    "azn", "kunt", "phuk", "phuck", "shiit",
-    // additional slurs
-    "jiggaboo", "mooncricket", "cottonpicker", "spearchucka", "nigglet",
-    "prairienigger", "timbernigger", "ofay", "gweilo", "redneck", "hillbilly",
-    "trailertrash", "inbred", "greaseball", "mojado", "tacobender", "wetneck",
-    "chinky", "ching", "chong", "slopehead", "buddhahead", "riceball",
-    "haji", "hadji", "dunecoon", "sandmonkey", "camelfucker", "muzzrat",
-    "sheeny", "christkiller", "ovendodger", "chug", "gyppo", "pikey",
-    "fudgepacker", "carpetmuncher", "buttpirate", "battyboy", "fairy", "poon",
-    "sped", "windowlicker", "veggie", "whore", "slut", "faggy", "homofag",
-    "chinaman", "jigg", "wigger", "wigga", "hykes", "hyke",
-    // profanity (full send)
-    "asshole", "arsehole", "arse", "jackass", "dumbass", "asshat", "asswipe",
-    "bastard", "twat", "prick", "wank", "wanker", "tosser", "cum", "cumshot",
-    "jizz", "tits", "titties", "titty", "boobs", "boob", "hoe", "damn", "crap",
-    "piss", "bollocks", "douche", "dickhead", "bullshit", "motherfucker",
-    "dildo", "boner", "blowjob", "handjob", "jerkoff", "anus", "butthole",
-    "bugger", "skank", "thot", "clit", "schlong", "wiener", "knob", "fanny",
-    "minge", "horny", "orgasm", "masturbate", "ejaculate", "semen", "scrotum",
-    "ballsack", "nutsack", "cameltoe", "milf", "gilf", "hentai", "coochie",
-    "choad", "queef", "smegma", "cocksucker", "cocksuck", "cumming",
-    // abbreviations / bad-content terms
-    "csam", "childporn", "pedo", "pedophile", "loli", "lolicon", "shota",
-    "shotacon", "jailbait", "pthc", "cheesepizza", "groomer",
-    "pornhub", "xvideos", "xnxx", "xhamster", "onlyfans", "brazzers", "redtube",
-    "kys", "kms",
-    // sound-alike / respelled variants
-    "faj", "fahg", "fagg", "nigguh", "niggah", "nigguz", "nigha", "nigah",
-    "neeger", "kneegrow", "neegrow", "nignog", "spyc",
-    // Hitler / nazi salutes and respellings
-    "adolf", "hitla", "hitlar", "hitlor", "hitlur", "hitlir", "hitlah", "hitlr",
-    "htler", "htlr", "heilhitler", "siegheil", "seigheil", "sieghail", "fuhrer",
-    "fuehrer", "furher", "meinkampf", "natzi",
-    // 271 / 336 spelled out
-    "twoseventyone", "twoseventy1", "twohundredseventyone", "twosevenone",
-    "threethreesix", "threethirtysix", "threethirty6", "threehundredthirtysix",
-    // Israel respellings
-    "yisrael", "isrl"
-  ];
-
-
-  // Short codes matched only as the WHOLE name (before ph->f folding) so they
-  // don't clobber "Phil", "Joseph", "cupid", etc.
-  var ACRO = ["cp", "ph", "jb", "csam", "hh"];
-  // Too short to match inside other names, but blocked as the whole name.
-  var WHOLE = ["nig", "nigs", "nigz", "nigg", "nigr", "fqg", "fgs", "heil", "hitr"];
-  // Real names that look like a misspelled slur; removed before the fuzzy
-  // checks ("randolph" is "adolf" with an extra letter).
-  var SAFE = ["randolf", "whistl"];
-
-  // The worst slurs get the extra checks below (misspellings, sound-alikes).
-  var SEVERE = ["nigger", "nigga", "faggot"];
-  // "nigga" skips the swapped-letter check: it would hit "enigma", "benign".
-  var NO_SWAP = ["nigga"];
-  // Caught with ANY one-letter change (added, missing, swapped, flipped) or
-  // two extra letters; real words that land within that are in DEEP_SAFE.
-  var DEEP = ["hitler", "adolf", "israel"];
-  var DEEP_SAFE = ["ismael", "israfel", "randolf", "rudolf", "rodolf", "adolesc", "dolfin", "ladelf",
-    "leadof", "hitter", "hiller", "hither", "whiter", "whittl", "whistl",
-    "littler", "shuttl", "wheel", "heel", "whitle"];
-  // Roots checked against the sound-alike version of the name.
-  var SOUND_ROOTS = ["nigger", "nigga", "niger", "niga", "faggot", "fagot",
-    "fag", "chink", "hitler", "hitla", "adolf"];
-  // Slurs caught with one extra letter slipped in ("nigfger").
-  var FUZZY = ["nigger", "nigga", "faggot", "faggit", "retard", "beaner",
-    "raghead", "towelhead", "redskin", "jigaboo", "chinky", "bitch", "whore",
-    "pussy", "fucker", "hitler", "adolf"];
+  // The word lists are stored encoded so they don't show up as readable text
+  // in the page source. Decode them with tools/wordlist.js to edit.
+  var W = (function (b64) {
+    var s = atob(b64), k = "edudeck", out = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) ^ k.charCodeAt(i % k.length);
+    return JSON.parse(new TextDecoder().decode(out));
+  })(
+    "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"
+  );
+  var BANNED = W.banned, ACRO = W.acro, WHOLE = W.whole, SAFE = W.safe, SEVERE = W.severe, NO_SWAP = W.noSwap,
+    DEEP = W.deep, DEEP_SAFE = W.deepSafe, SOUND_ROOTS = W.soundRoots, FUZZY = W.fuzzy, REVERSED = W.reversed;
 
   // Letters from other alphabets that look like latin ones (Cyrillic, Greek,
   // IPA). Accents and fancy/fullwidth fonts are handled by NFKD below.
@@ -130,7 +80,7 @@
     return out;
   }
 
-  // Fold symbol/letter lookalikes and leet so "n1_gg3r", "phaggot", "|<ike" all
+  // Fold symbol/letter lookalikes and leet ("h3ll0", "ph", "|<") so names
   // reduce to plain letters before matching.
   function normName(s) {
     return fold(s)
@@ -143,17 +93,17 @@
       .replace(/[8]/g, "b").replace(/[6]/g, "g").replace(/[9]/g, "g")
       .replace(/[()<>{}\[\]]/g, "c").replace(/[^a-z]/g, "");
   }
-  // Drop runs of a repeated letter to one, so "niiigggeeer" -> "niger".
+  // Drop runs of a repeated letter to one, so "heeelllooo" -> "helo".
   function collapse(s) { return s.replace(/(.)\1+/g, "$1"); }
-  // Sound-alike spelling: "faj", "nikka", "nicca", "nibba", "nyggr", "niqqa".
+  // Sound-alike spelling: ck->k, q/j->g, y->i, doubled letters.
   function soundAlike(s) {
     return s.replace(/ck/g, "k").replace(/[qj]/g, "g").replace(/y/g, "i")
-      .replace(/ni(kk|cc|bb)/g, "nigg").replace(/ee/g, "i");
+      .replace(/ni(kk|cc|bb)/g, W.sound).replace(/ee/g, "i");
   }
   function reverse(s) { return s.split("").reverse().join(""); }
 
   // Collapsed forms of long enough words, to catch stretched spellings without
-  // turning short words (coon->con, gay) into false positives.
+  // turning short words (4+ letters only) into false positives.
   var BANNED_COLLAPSED = [];
   for (var _i = 0; _i < BANNED.length; _i++) {
     var _c = collapse(BANNED[_i]);
@@ -241,7 +191,7 @@
         if (NO_SWAP.indexOf(w) === -1 && oneSwapped(s.substr(j, L), w)) return true;
         if (transposed(s.substr(j, L), w)) return true;
         if (L >= 6 && oneDropped(s.substr(j, L - 1), w)) return true;
-        // up to two extra letters mixed in (one for the short "nigga")
+        // up to two extra letters mixed in (one for short words)
         if (spreadOut(s.substr(j, L + (L >= 6 ? 2 : 1)), w)) return true;
       }
     }
@@ -274,7 +224,7 @@
       if (WHOLE.indexOf(n) !== -1 || WHOLE.indexOf(c) !== -1 || WHOLE.indexOf(pc) !== -1) return true;
       if (contains(n, BANNED) || contains(c, BANNED_COLLAPSED)) return true;
       if (contains(p, SOUND_ROOTS) || contains(pc, SOUND_ROOTS)) return true;
-      if (contains(reverse(n), ["nigger", "faggot", "hitler", "adolf"])) return true;   // "reggin"
+      if (contains(reverse(n), REVERSED)) return true;   // spelled backwards
       if (fuzzyHit(n) || fuzzyHit(c) || fuzzyHit(p) || fuzzyHit(pc)) return true;
       var d = n;
       for (var i = 0; i < DEEP_SAFE.length; i++) d = d.split(DEEP_SAFE[i]).join("-");
@@ -309,5 +259,25 @@
     return false;
   }
 
-  window.EduNameFilter = { isBanned: isBanned, isReserved: isReserved, normName: normName };
+  // The dev and mod codes are kept only as SHA-256 hashes, so the page source
+  // never contains them. The dev code is folded with normName first (case,
+  // spaces, symbols and leet don't matter); the mod code only drops spaces.
+  // Resolves to "dev", "mod" or null.
+  var DEV_HASH = "67ca17edac6de25aeed964646479ae2555785a8f495350da4106ea4991499da1";
+  var MOD_HASH = "c88d80d972d8440efa3f02e0d545053957f3c739187f9eb7825d3e10daec7b39";
+  function sha256(s) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode("edudeck:" + s)).then(function (buf) {
+      var b = new Uint8Array(buf), hex = "";
+      for (var i = 0; i < b.length; i++) hex += (b[i] < 16 ? "0" : "") + b[i].toString(16);
+      return hex;
+    });
+  }
+  function checkCode(raw) {
+    if (!raw || !window.crypto || !crypto.subtle) return Promise.resolve(null);
+    return Promise.all([sha256(normName(raw)), sha256(String(raw).replace(/\s+/g, ""))]).then(function (h) {
+      return h[0] === DEV_HASH ? "dev" : h[1] === MOD_HASH ? "mod" : null;
+    }, function () { return null; });
+  }
+
+  window.EduNameFilter = { isBanned: isBanned, isReserved: isReserved, normName: normName, checkCode: checkCode };
 })();

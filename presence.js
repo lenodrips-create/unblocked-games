@@ -25,23 +25,20 @@
   }
   function saveName(n) { try { localStorage.setItem("edudeck_name", n); } catch (e) {} }
 
-  // secret dev alias: entering DEV_CODE (or a close typo of it) becomes "Lennon"
-  var DEV_CODE = "Hornets10$", DEV_NAME = "Lennon";
+  // secret dev alias: entering the dev code becomes "Lennon" (the code itself
+  // is only stored as a hash, see checkCode in namefilter.js)
+  var DEV_NAME = "Lennon";
   function storedDev() { try { return localStorage.getItem("edudeck_dev") === "1"; } catch (e) { return false; } }
   function saveDev(on) { try { localStorage.setItem("edudeck_dev", on ? "1" : "0"); } catch (e) {} }
-  // typo-tolerant match: fold case/spacing/leet ($->s, 0->o, 1->i) both sides
-  function isDevCode(x) { return !!x && normName(x) === normName(DEV_CODE); }
 
-  // mod alias: entering MOD_CODE becomes "Gunner" with a {mod} tag and a pin.
+  // mod alias: entering the mod code becomes "Gunner" with a {mod} tag and a pin.
   // Looks only: no pause button, no pause bypass, nothing else.
-  var MOD_CODE = "1636", MOD_NAME = "Gunner";
+  var MOD_NAME = "Gunner";
   function storedMod() { try { return localStorage.getItem("edudeck_mod") === "1"; } catch (e) { return false; } }
   function saveMod(on) { try { localStorage.setItem("edudeck_mod", on ? "1" : "0"); } catch (e) {} }
-  function isModCode(x) { return !!x && String(x).replace(/\s+/g, "") === MOD_CODE; }
 
   // ---- name filter (shared, see namefilter.js) ----------------------------
   var NF = window.EduNameFilter;
-  function normName(s) { return NF.normName(s); }
   function isBanned(name) { return NF.isBanned(name); }
   // "Lennon" is the dev's: only reachable through the dev code
   function notAllowed(name) { return NF.isBanned(name) || NF.isReserved(name); }
@@ -68,15 +65,21 @@
     var go = wrap.querySelector("#ed-go");
     var err = wrap.querySelector("#ed-err");
     input.focus();
+    var busy = false;
     function done() {
+      if (busy) return;
       var raw = (input.value || "").trim();
-      if (isDevCode(raw)) {       // secret dev alias (typo-tolerant)
+      busy = true;
+      NF.checkCode(raw).then(function (code) { busy = false; finish(raw, code); });
+    }
+    function finish(raw, code) {
+      if (code === "dev") {       // secret dev alias
         document.body.removeChild(wrap);
         myDev = true; saveDev(true); myMod = false; saveMod(false); saveName(DEV_NAME);
         cb(DEV_NAME);
         return;
       }
-      if (isModCode(raw)) {       // mod alias (checked before the filter: "1636" looks like an address)
+      if (code === "mod") {       // mod alias (checked before the filter: the code looks like an address)
         document.body.removeChild(wrap);
         myDev = false; saveDev(false); myMod = true; saveMod(true); saveName(MOD_NAME);
         cb(MOD_NAME);
@@ -293,9 +296,9 @@
     setStatus("…");
     hookGameClicks();
     var n = storedName();
-    if (n && (isDevCode(n) || storedDev())) {   // convert a stored code, or resume a dev session
+    if (n && storedDev()) {   // resume a dev session
       myName = DEV_NAME; myDev = true; saveDev(true); saveName(DEV_NAME); connect();
-    } else if (n && (isModCode(n) || storedMod())) {   // same for the mod
+    } else if (n && storedMod()) {   // same for the mod
       myName = MOD_NAME; myMod = true; saveMod(true); saveName(MOD_NAME); connect();
     } else if (n && !notAllowed(n)) {
       myName = n; myDev = false; connect();
