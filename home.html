@@ -37,13 +37,6 @@
   }
   .wrap{max-width:1100px;margin:0 auto;padding:26px 18px 70px;}
 
-  .top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;
-       padding-bottom:16px;border-bottom:1px solid var(--line);}
-  .brand{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-right:auto;}
-  .top nav{display:flex;gap:16px;}
-  .top nav a{color:var(--muted);text-decoration:none;font-size:13px;}
-  .top nav a:hover,.top nav a:focus-visible{color:var(--text);}
-
   .hero{display:block;width:100%;max-width:640px;aspect-ratio:16/9;object-fit:contain;background:#000;margin:20px auto 0;}
   .hero[hidden]{display:none;}
   .movies{margin-top:24px;}
@@ -108,9 +101,6 @@
 </head>
 <body>
 <div class="wrap">
-
-  <header class="top">
-  </header>
 
   <video class="hero" autoplay muted loop playsinline hidden onloadeddata="this.hidden=false">
     <source src="top.mp4" type="video/mp4">
@@ -258,11 +248,6 @@ document.getElementById("q").addEventListener("input", e => {
 
 render();
 </script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="namefilter.js?v=6"></script>
-<script src="presence.js?v=12"></script>
-<script src="pause.js?v=2"></script>
 <script src="cookiebanner.js?v=1"></script>
 </body>
 </html>
