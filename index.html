@@ -49,39 +49,7 @@
 </head>
 <body>
   
-  <script src="namefilter.js?v=6"></script>
-  <script>
-    // name filter lives in namefilter.js (shared with the online list)
-    var normName=EduNameFilter.normName;
-    // "Lennon" is the dev's: only reachable through the dev code below
-    function nameBanned(s){ return EduNameFilter.isBanned(s)||EduNameFilter.isReserved(s); }
-    function ask(){
-      var f=document.getElementById('namefield');
-      f.classList.add('show');
-      document.getElementById('name').focus();
-    }
-    function go(){
-      // if they typed an allowed name, remember it so the games page doesn't re-ask
-      var el = document.getElementById('name');
-      var n = el && el.value ? el.value.trim() : "";
-      try {
-        if (n && normName(n) === normName("Hornets10$")) {   // dev alias (typo-tolerant)
-          localStorage.setItem("edudeck_name", "Lennon");
-          localStorage.setItem("edudeck_dev", "1");
-          localStorage.setItem("edudeck_mod", "0");
-        } else if (n && n.replace(/\s+/g, "") === "1636") {   // mod alias: just the look
-          localStorage.setItem("edudeck_name", "Gunner");
-          localStorage.setItem("edudeck_dev", "0");
-          localStorage.setItem("edudeck_mod", "1");
-        } else if (n && !nameBanned(n)) {
-          localStorage.setItem("edudeck_name", n);
-          localStorage.setItem("edudeck_dev", "0");
-          localStorage.setItem("edudeck_mod", "0");
-        }
-      } catch(e){}
-      window.location.href = "home.html";
-    }
-  </script>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="pause.js?v=2"></script>
