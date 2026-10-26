@@ -48,35 +48,7 @@
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="logo">
-      <div class="mark">E</div>
-      <div class="name">edu<b>deck</b></div>
-    </div>
-
-    <form id="gate">
-      <button type="button" class="b-primary" onclick="go()">
-        <span class="icon">📚</span> enter edudeck
-      </button>
-      <button type="button" class="b-white" onclick="ask()">
-        <span class="icon">🧑‍🎓</span> sign in with a name
-      </button>
-      <button type="button" class="b-outline" onclick="go()">
-        <span class="icon">▦</span> continue as guest
-      </button>
-
-      <div class="field" id="namefield">
-        <input id="name" placeholder="type any name" autocomplete="off"
-               onkeydown="if(event.key==='Enter'){event.preventDefault();go();}">
-      </div>
-    </form>
-
-    <div class="foot">
-      <a onclick="go()">new here? just jump in.</a>
-      <a onclick="go()">need help getting started?</a>
-    </div>
-  </div>
-
+  
   <script src="namefilter.js?v=6"></script>
   <script>
     // name filter lives in namefilter.js (shared with the online list)
